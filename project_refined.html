@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+ <html>
+     <head>
+         <title>The Data Incubator -- Ian Johnston -- Capstone Project</title>
+         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false"></script>
+         <script src="jquery.min.js"></script>
+	 <script src="d3.v3.min.js"></script>
+         <script src="boston_tweet_newdata.js" charset="utf-8"></script>
+         <script src="nyc_tweet_newdata.js" charset="utf-8"></script>
+         <script src="philly_tweet_newdata.js" charset="utf-8"></script>
+         <link rel="stylesheet" type="text/css" href="projectstyle.css">
+     </head>
+     <body>
+       <table width="100%" align="left" id="header">
+         <tr>
+           <td>The Data Incubator Capstone Project, Spring 2015</td>
+         </tr>
+       </table>
+&nbsp;
+       <table width="950" align="center" cellspacing="5">
+&nbsp;
+       <tr>
+       <td width="550" valign="top">
+         <div id="title">&nbsp; <span id="cityname"></span> |
+           <input type = "button" class = "resbtn" value = "Raw Positions" onClick="resetMap();">
+           <input type = "button" id = "kmnbtn" value = "Mixture Model" onClick="toggleBox();">
+         </div>
+         <div id="map"></div>
+       </td>
+       <td valign="top">
+         <div id="maininfo">
+           <p>We can view the spatial distribution of tweets that were collected off-and-on between
+              July and November of 2014 using D3 and the Google Maps API. <br><br> Try exploring another city:
+              <select id = "cityChoice" 
+                      onchange="cityChange();">
+                <option value="boston">Boston, MA</option>
+                <option value="nyc">New York City, NY</option>
+                <option value="philly">Philadelphia, PA</option>
+              </select>
+           </p>
+         </div>
+         <br>
+         <div id="extrainfo">
+           <p>
+              This first dashboard provides a window into the raw spaital coordinates of the geocoded tweets
+              in a particular city.
+              <br>
+              <ol>
+                <li><b>Reset Map</b> -- restore the map to the default view</li>
+                <br>
+                <li><b>Mixture Model</b>  -- explore clustering the tweets using a mixture model 
+                    that is tailored to a particular set of tokens [<a href="project_about.html">about</a>]</li>
+            </p>
+         </div>
+         <div id="pca">
+           <form action="/_mix" method="POST" id="tune">
+              <table id="tunebox" cellpadding="5" cellspacing="5" width="325" align="center">
+                <tr>
+                  <td colspan="2">
+                    <p class="header"><u>Model Tuning Parameters</u> [<a href="project_about.html">about</a>]</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <b>1)</b> Number of components <br> 
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>integer</i>, {2,...,20}:
+                  </td> 
+                  <td align="left">
+                    <input type="text" class="medium" size="2" maxlength="2" name="K" value="10">
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <b>2)</b> Prior probability of noise<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>decimal</i>, (0,1):
+                  </td>
+                  <td align="left">
+                    <input type="text" class="mediumreadonly" maxlength="5" name="noise" value = "0.95" readonly>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <b>3)</b> Words of interest <br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>multiple selection</i>:
+                  </td>
+                  <td align="left">
+                    <input type="checkbox" name="happy" id="happy">happy<BR>
+                    <input type="checkbox" name="halloween" id="halloween">halloween<BR>
+                    <input type="checkbox" name="beer" id="beer">beer<BR>
+                    <input type="checkbox" name="music" id="music">music<BR>
+                    <input type="checkbox" name="lunch" id="lunch">lunch
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" align="right">
+                    <input type="hidden" id="cityind" name="cityind" value="">
+                    <input type="button" id="ngts" class="btn" name="save" value="Run Model">
+                    <input type="reset" class="btn" name="reset" value="Reset" onClick='$("#result").text("&nbsp;");'>
+                  </td>
+                </tr>  
+                <tr>
+                  <td colspan="2" align="left" id="result">&nbsp;</td>
+                </tr>
+             </table>
+            </form>
+         </div>
+       </td>
+       </tr>
+       </table>
+
+       <hr size="10" color="#000000">
+       <table width="950" align="center" cellspacing="5">
+         <tr>
+           <td>
+             <div id="additional">
+               <p align="left">For my project, I used <a href="http://cran.r-project.org/">R</a> for the initial gathering and cleaning of tweets,
+               <a href="https://www.python.org/">python</a> and <a href="http://bottlepy.org/docs/dev/index.html">bottle</a> for the running of back-end
+               computations and the handling of the web server, and <a href="http://d3js.org/">d3</a> for the visualization of the results.</p>
+
+               <p>More details about my mixture model can be found on the [<a href="project_about.html">about</a>] page.</p>
+             </div>
+           </td>
+         </tr>
+       </table>
+
+       <table width="100%" align="left" id="footer">
+         <tr>
+           <td>Website and project designed by Ian Johnston</td>
+         </tr>
+       </table>
+       <script>
+           document.getElementById('cityind').value = document.getElementById('cityChoice').selectedIndex;
+           function cityChange() {
+             resetMap();
+             document.getElementById('cityind').value=document.getElementById('cityChoice').selectedIndex;
+             document.getElementById('tune').reset();
+           };
+           function toggleBox() {
+             var property = document.getElementById('kmnbtn');
+             if(property.className == '') {
+               property.className = 'toggled';
+             } else {
+               property.className = '';
+             };
+             $("#extrainfo").toggle();
+             $("#pca").toggle();
+           };
+            $(function() {
+            $('#ngts').bind('click', function() {
+              $.getJSON('/_mix', {
+                K: $('input[name="K"]').val(),
+                noise: $('input[name="noise"]').val(),
+                cityind: $('input[name="cityind"]').val(),
+                happy: $('#happy').prop('checked'),
+                halloween: $('#halloween').prop('checked'),
+                beer: $('#beer').prop('checked'),
+                music: $('#music').prop('checked'),
+                lunch: $('#lunch').prop('checked')
+              }, function(data) {
+                if(data.result == "Error") {
+                  $("#result").html("Please enter a valid choice for <b>1)</b>.");
+                } else {
+                  $.getScript(data.result);
+                  $("#result").text("Preparing results...");
+                  setTimeout(centroidMap, 1000);
+                  setTimeout(function() { $("#result").text("Preparing results... updating map!"); }, 500);
+                }
+              });
+              return false;
+              });
+            });
+           var centroidData = [];
+           var AllTweets = [ tweetData1,
+                             tweetData2,
+                             tweetData3 ];
+
+           var AllHeatMaps = [ heatMapData1,
+                               heatMapData2,
+                               heatMapData3 ];
+
+           var LatLonArray = [ [42.3581, -71.0636],
+                               [40.7577, -73.9857],
+                               [39.9500, -75.1667] ];
+           var CityNames = [ 'Boston, MA',
+                             'New York City, NY',
+                             'Philadelphia, PA' ];
+           var CIRCLES;
+           var tweetData;
+           function GPSSensor(initData, bd) {
+               //state information
+               var _div = null;
+               var _data = initData;
+               var _projection = null;
+
+               function transform(d) {
+                   var padding = 10;                   
+                   d = new google.maps.LatLng(d.Lat, d.Long);
+                   d = _projection.fromLatLngToDivPixel(d);
+                   return d3.select(this) 
+                       .style("left", (d.x - padding) + "px")
+                       .style("top", (d.y - padding) + "px");
+               };
+               
+               function transformWithEase(d) {
+                   var padding = 10;
+                   d = new google.maps.LatLng(d.Lat, d.Long);
+                   d = _projection.fromLatLngToDivPixel(d);
+                   return d3.select(this)
+                       .transition().duration(300)
+                       .style("left", (d.x - padding) + "px")
+                       .style("top", (d.y - padding) + "px");
+               };
+
+               //superclass methods for google maps
+               this.onAdd = function() {
+                   _div = d3.select(this.getPanes().overlayLayer)
+                            .append("div")
+                            .attr("class", "stations");
+               };               
+                              
+               this.draw = function () {                   
+                   var padding = 10;
+                   _projection = this.getProjection();
+
+                   CIRCLES = _div.selectAll("svg")
+                       .data(_data, function (d) { return d.Key; })
+                       .each(transform) // update existing markers
+                       .enter()
+                       .append("svg:svg")
+                       .each(transform)
+                       .attr("class", "marker");
+
+                   // Add a circle.
+                   if (bd == 0) {
+                     CIRCLES.append("svg:circle")
+                         .attr("r", 4.5)
+                         .attr("cx", padding)
+                         .attr("cy", padding);
+                   } else if(bd == 1) {
+                     CIRCLES.append("svg:circle")
+                         .attr("r", 7)
+                         .attr("cx", padding)
+                         .attr("cy", padding)
+                         .style("fill", function (d) {
+                             if (d.Key == "1") {
+                               return "#FF0000";
+                             } else {
+                               return "#FFA500";
+                             };
+                           });
+                   } else if(bd == 2) {
+                     CIRCLES.append("svg:circle")
+                         .attr("r", 4.5)
+                         .attr("cx", padding)
+                         .attr("cy", padding)
+                         .style("fill", function (d) { return d.KMColor.toString();});
+                   };
+               };
+
+               this.onRemove = function () {
+                   _div.remove();
+               };
+
+               this.update = function (data) {                    
+                   //update internal data which drive redrawing on zoom_changed                   
+                   for (var i = 0; i < data.length; i++) {
+                       var found = false;
+                       for (var j = 0; j < _data.length; j++) {
+                           if (_data[j].Key === data[i].Key) {
+                               found = true;
+                               _data[j].Lat = data[i].Lat;
+                               _data[j].Long = data[i].Long;
+                           }
+                       }
+                       if (!found)
+                           _data.push(data[i]);
+                   }
+                   //this.draw();
+                   _div.selectAll("svg")
+                       .data(_data, function (d) { return d.Key; }) 
+                       .each(transformWithEase);                  
+               };
+           };
+
+           //subclassing
+           GPSSensor.prototype = new google.maps.OverlayView();
+
+           // Create the Google Map
+           var map = new google.maps.Map(d3.select("#map").node(), {
+               zoom: 12,
+               center: new google.maps.LatLng(LatLonArray[document.getElementById("cityChoice").selectedIndex][0],
+                LatLonArray[document.getElementById("cityChoice").selectedIndex][1]),
+               mapTypeId: google.maps.MapTypeId.HYBRID
+           });
+
+           tweetData = AllTweets[document.getElementById("cityChoice").selectedIndex];
+           var sensorLayer = new GPSSensor(tweetData, 0);
+           sensorLayer.setMap(map);
+           document.getElementById("cityname").textContent = CityNames[document.getElementById("cityChoice").selectedIndex];
+
+
+           function resetMap() {
+               document.getElementById("kmnbtn").className='';
+               $("#extrainfo").show();
+               $("#pca").hide();
+               var map = new google.maps.Map(d3.select("#map").node(), {
+                 zoom: 12,
+                 center: new google.maps.LatLng(LatLonArray[document.getElementById("cityChoice").selectedIndex][0],
+                LatLonArray[document.getElementById("cityChoice").selectedIndex][1]),
+                 mapTypeId: google.maps.MapTypeId.HYBRID
+             });
+
+             tweetData = AllTweets[document.getElementById("cityChoice").selectedIndex];
+             var sensorLayer = new GPSSensor(tweetData, 0);
+             sensorLayer.setMap(map);
+             document.getElementById("cityname").textContent = CityNames[document.getElementById("cityChoice").selectedIndex];
+           };
+
+           function centroidMap() {
+               var map = new google.maps.Map(d3.select("#map").node(), {
+                 zoom: 12,
+                 center: new google.maps.LatLng(LatLonArray[document.getElementById("cityChoice").selectedIndex][0],
+                LatLonArray[document.getElementById("cityChoice").selectedIndex][1]),
+                 mapTypeId: google.maps.MapTypeId.HYBRID
+             });
+             var sensorLayer = new GPSSensor(centroidData, 1);
+             sensorLayer.setMap(map);
+             document.getElementById("cityname").textContent = CityNames[document.getElementById("cityChoice").selectedIndex];
+           };
+       </script>
+   </body>
+ </html>

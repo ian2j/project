@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>The Data Incubator -- Ian Johnston -- Capstone Project</title>
+    <link rel="stylesheet" type="text/css" href="projectstyle.css">
+ </head>
+   <body> 
+     <table width="100%" align="left" id="header">
+       <tr>
+         <td>The Data Incubator Capstone Project, Spring 2015</td>
+       </tr>
+     </table>
+     &nbsp; 
+       <table width="950" align="center" cellspacing="5">
+         <tr>
+           <td> 
+             <div id="additional">
+               <p>[<a href="project_refined.html">Home</a>]</p>
+               <p align = "center">
+                  How much can we learn about a given geographic region based on the content of its corresponding social media posts (Twitter)?
+               </p>
+               <table width="700" align="center" cellspacing="0" cellpadding="3" border="0" bordercolor="black">
+                 <tr>
+                   <td width="400"><img src="boston_about.png" width="400"></td>
+                   <td valign="top" style="padding: 10px; margin: 5px;">
+                     <p>
+                       In my project I develop a web app to help do this by analyzing upwards of <b>two million</b> tweets collected from users in several major United States cities in late 2014.
+                     </p>
+                     <p>
+                       I fit a <b>mixture model</b> (<i>details below</i>) to the historical geocoded tweet data in a city and allow a user-specified set of keywords to guide the prior probabilities of each
+                       tweet belonging to a particular component. 
+                     </p>
+                     <p>
+                       After fitting the model my tool can be used to profile a city and see where people tend to congregate and tweet about certain topics.
+                     </p>
+                     <p>Why don't you <a href="project_refined.html">try it</a> yourself?</p>
+                   </td>
+                 </tr>
+               </table>
+               <br>
+               <table width="650" align="center" cellspacing="0" cellpadding="3" border="0" bordercolor="black">
+                 <tr>
+                   <th colspan="2" bgcolor="#FFFFAA">Details of the Mixture Model for Geocoded Tweets</th>
+                 </tr>
+                 <tr>
+                   <td colspan="2">
+                     <p>
+                       We can easily plot a geocoded tweet as a point on a map using its longitude and latitude coordinates (<i>left</i>). Each tweet
+                       also contains a small set of words, so in this way we can also visualize where people post about particular topics (<i>right</i>).
+                     </p>
+                   </td>
+                 </tr>
+                 <tr>
+                   <td width="450" valign="top" align="center"><img src="city_dots.png" width="300"></td>
+                   <td width="450" valign="top" align="center"><img src="city_text.png" width="300"></td>
+                 </tr>
+                 <tr>
+                   <td colspan="2">
+                     <p>
+                       A key assumption in my mixture model is that there will be one component of <span style="color: red; font-weight:bold;">random</span> noise throughout a city,
+                       and a number of other components that have <span style="color: orange; font-weight:bold;">gaussian</span> distributions with relatively small variances. 
+                       I allow the presence of a word, e.g. "beer", in a tweet to affect the prior probability of its spatial coordinates belonging to one of the gaussian
+                       components (<i>left</i>). After using an <a href="http://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm">EM algorithm</a> to fit this model, 
+                       you can use the estimated locations of the components (<i>right</i>) to say something informative about the behavior of social media users in a particular city 
+                       with respect to those keywords.
+                     </p>
+                   </td>
+                 </tr>
+                 <tr>
+                   <td width="450" valign="top" align="center"><img src="city_cols.png" width="300"></td>
+                   <td width="450" valign="top" align="center"><img src="city_comp.png" width="300"></td>
+                 </tr>
+               </table>
+               <p align="right">[<a href="project_refined.html">Home</a>]</p>
+             </div>
+           </td>
+         </tr>
+       </table>
+
+       <table width="100%" align="left" id="footer">
+         <tr>
+           <td>Website and project designed by Ian Johnston</td>
+         </tr>
+       </table>
+   </body>
+ </html>
